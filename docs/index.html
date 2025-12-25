@@ -6,27 +6,52 @@
     <link rel="shortcut icon" href="./uebuilder.ico" type="image/x-icon">
     <title>请选择您的浏览源</title>
     <style>
-        /* 页面基础样式 - 黑色背景 */
+        /* 页面基础样式 - 黑色背景 + 视频背景层级重置 */
         body {
             font-family: "Microsoft YaHei", sans-serif;
-            background-color: #000; /* 页面背景黑色 */
+            background-color: #000;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* 让页面占满视口高度，方便居中 */
+            min-height: 100vh;
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
+            overflow: hidden; /* 禁止页面滚动 */
+            position: relative; /* 为视频父级做定位 */
         }
 
-        /* 核心小框 - 灰色背景、居中、白色文字 */
+        /* 背景视频样式 - 全屏铺满、静音自动播放、循环 */
+        .bg-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 铺满全屏，保持比例无黑边 */
+            z-index: -1; /* 视频置于最底层 */
+            opacity: 0.7; /* 视频透明度，可自行调整0-1 */
+        }
+
+        /* 核心小框 - 磨砂半透明灰色 + 可拖拽定位 */
         .container-box {
-            background-color: #666; /* 小框灰色背景 */
+            background-color: rgba(102, 102, 102, 0.3); /* 半透明灰色 */
+            backdrop-filter: blur(10px); /* 磨砂模糊核心属性 */
+            -webkit-backdrop-filter: blur(10px); /* 兼容Safari浏览器 */
             border-radius: 10px;
             padding: 30px;
-            width: 500px; /* 小框固定宽度 */
-            text-align: center; /* 框内所有内容居中 */
-            color: #fff; /* 框内文字默认白色 */
+            width: 500px;
+            max-width: 100%; /* 适配移动端 */
+            text-align: center;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1); /* 加细边框增强磨砂质感 */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* 阴影增强立体感 */
+            position: absolute; /* 改为绝对定位，用于拖拽 */
+            cursor: move; /* 鼠标移上去显示移动光标 */
+            /* 初始居中定位 */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         /* 按钮样式 */
@@ -37,6 +62,7 @@
         .common-btn {
             padding: 10px 20px;
             margin-right: 15px;
+            margin-bottom: 10px; /* 移动端按钮换行间距 */
             border: none;
             border-radius: 5px;
             background-color: #409eff;
@@ -44,9 +70,9 @@
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s;
-            /* 去除a标签默认样式，保持按钮外观 */
             text-decoration: none;
             display: inline-block;
+            cursor: pointer; /* 覆盖容器的move光标 */
         }
 
         .common-btn:hover {
@@ -59,39 +85,62 @@
         }
 
         .toggle-trigger {
-            color: #fff; /* 触发文字白色 */
-            cursor: pointer;
+            color: #fff;
+            cursor: pointer; /* 覆盖容器的move光标 */
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 10px;
-            display: inline-block; /* 确保居中效果 */
+            display: inline-block;
         }
 
         .toggle-trigger:hover {
-            color: #ddd; /* 悬停浅白色，增加交互感 */
+            color: #ddd;
             text-decoration: underline;
         }
 
+        /* 展开内容区同步磨砂半透明 */
         .toggle-content {
             margin-top: 15px;
             padding: 15px;
-            background-color: #888; /* 展开内容区浅灰色 */
+            background-color: rgba(136, 136, 136, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-radius: 5px;
-            display: none; /* 默认隐藏 */
-            color: #fff; /* 展开内容文字白色 */
+            display: none;
+            color: #fff;
             line-height: 1.8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* 新增：重点文字红色样式 */
+        /* 重点文字红色样式 */
         .highlight-text {
-            color: #ff0000; /* 红色 */
-            font-weight: bold; /* 可选：加粗突出重点 */
+            color: #ff0000;
+            font-weight: bold;
+        }
+
+        /* 详情文本里的链接样式 */
+        .text-link {
+            color: #d40000; /* 蓝色链接色，和按钮呼应 */
+            text-decoration: underline;
+            cursor: pointer; /* 鼠标变成手型 */
+            /* 覆盖容器的move光标 */
+            pointer-events: auto;
+        }
+        .text-link:hover {
+            color: #d40000; /* 悬停浅蓝，和按钮呼应 */
         }
     </style>
 </head>
 <body>
+    <!-- 背景视频 -->
+    <video class="bg-video" autoplay loop muted playsinline>
+        <!-- 替换成你的视频地址，支持mp4/ogg/webm，推荐mp4 -->
+        <source src="慧慧_1.mp4" type="video/mp4">
+        您的浏览器不支持视频播放，请更换浏览器重试
+    </video>
+
     <!-- 核心小框 - 包含所有内容 -->
-    <div class="container-box">
+    <div class="container-box" id="draggableBox">
         <!-- 两个按钮区域（当前标签页跳转） -->
         <div class="btn-group">
             <a href="http://bgsmc.top/Home/" class="common-btn">Github浏览源</a>
@@ -105,30 +154,122 @@
                 Github浏览源可能需加速器浏览 内陆建议樱花浏览源<br>
                 Github浏览源速率小 樱花浏览源速率高<br>
                 如加载缓慢或卡顿 请更换浏览源<br>
-                <span class="highlight-text">重点:Github有SSL 我们没经济备案只能用樱花TCP建站 导致樱花浏览源无正规SSL 导致会被部分阻止浏览</span>
+                <span class="highlight-text">重点:<a href="https://github.com/cuteFishovo" target="_blank" class="text-link">Github</a>有SSL 我们没经济备案只能用<a href="https://www.natfrp.com/?page=panel&module=addproxy" target="_blank" class="text-link">樱花</a>TCP建站 导致樱花浏览源无正规SSL 导致会被部分阻止浏览</span>
             </div>
         </div>
     </div>
 
     <script>
-        // 获取元素
+        // ========== 修复后：禁用开发者工具（无无限刷新） ==========
+        // 1. 禁用F12键、组合快捷键
+        document.addEventListener('keydown', function(e) {
+            // 禁止F12
+            if (e.key === 'F12') {
+                e.preventDefault();
+            }
+            // 禁止Ctrl+Shift+I（Chrome/Edge）、Ctrl+Shift+J（Chrome）、Ctrl+U（查看源码）
+            if ((e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+            }
+        });
+
+        // 2. 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        // 3. 优化版开发者工具检测（仅在工具可见时触发，避免误判）
+        let devToolsOpened = false;
+        function detectDevTools() {
+            // 仅检测一次，避免重复触发
+            if (devToolsOpened) return;
+
+            // 创建检测元素，通过尺寸变化判断开发者工具是否打开
+            const testElement = document.createElement('div');
+            testElement.style.width = '100px';
+            testElement.style.height = '100px';
+            testElement.style.position = 'absolute';
+            testElement.style.top = '-9999px';
+            document.body.appendChild(testElement);
+
+            // 开发者工具打开且可见时，元素尺寸会变化
+            const isOpened = testElement.offsetWidth !== 100 || testElement.offsetHeight !== 100;
+            document.body.removeChild(testElement);
+
+            if (isOpened) {
+                devToolsOpened = true;
+                // 触发操作（可选：提示/跳转/隐藏内容，注释掉刷新避免无限刷新）
+                alert('禁止打开开发者工具查看源码！');
+                // window.location.reload(); // 如需刷新可取消注释，建议用alert替代
+            }
+        }
+        // 降低检测频率，减少性能消耗（5秒一次）
+        setInterval(detectDevTools, 5000);
+
+        // ========== 原有功能：展开收起 ==========
         const trigger = document.getElementById('toggleText');
         const content = document.getElementById('toggleContent');
-
-        // 绑定点击事件（修复判断逻辑）
         trigger.addEventListener('click', function() {
-            // 改用 getComputedStyle 获取最终生效的样式（包含样式表）
             const isHidden = window.getComputedStyle(content).display === 'none';
-            
             if (isHidden) {
-                // 展开内容
                 content.style.display = 'block';
                 trigger.textContent = '点击收起浏览源详情';
             } else {
-                // 收起内容
                 content.style.display = 'none';
                 trigger.textContent = '点击展开浏览源详情';
             }
+        });
+
+        // ========== 原有功能：拖拽 ==========
+        const draggableBox = document.getElementById('draggableBox');
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        // 鼠标按下时记录初始位置
+        draggableBox.addEventListener('mousedown', function(e) {
+            // 点击链接时不触发拖拽
+            if (e.target.classList.contains('text-link') || e.target.tagName === 'A') {
+                return;
+            }
+            isDragging = true;
+            // 计算鼠标相对于盒子左上角的偏移量（避免点击位置不同导致盒子跳动）
+            offsetX = e.clientX - draggableBox.getBoundingClientRect().left;
+            offsetY = e.clientY - draggableBox.getBoundingClientRect().top;
+            
+            // 拖拽时添加视觉反馈
+            draggableBox.style.opacity = '0.9';
+            draggableBox.style.transition = 'none'; // 取消过渡动画，让拖拽更顺滑
+        });
+
+        // 鼠标移动时更新盒子位置
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            
+            // 计算盒子新的位置（减去偏移量，保证鼠标点哪拖哪）
+            const newLeft = e.clientX - offsetX;
+            const newTop = e.clientY - offsetY;
+            
+            // 设置盒子位置
+            draggableBox.style.left = `${newLeft}px`;
+            draggableBox.style.top = `${newTop}px`;
+            draggableBox.style.transform = 'none'; // 取消初始的居中transform
+        });
+
+        // 鼠标松开时停止拖拽
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                // 恢复视觉样式
+                draggableBox.style.opacity = '1';
+                draggableBox.style.transition = 'opacity 0.2s';
+            }
+        });
+
+        // 鼠标离开页面时也停止拖拽（防止拖拽到窗口外卡住）
+        document.addEventListener('mouseleave', function() {
+            isDragging = false;
+            draggableBox.style.opacity = '1';
+            draggableBox.style.transition = 'opacity 0.2s';
         });
     </script>
 </body>
